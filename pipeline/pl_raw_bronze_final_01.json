@@ -1,0 +1,269 @@
+{
+	"name": "pl_raw_bronze_final_01",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get File Name",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_DelimitedText_Raw",
+						"type": "DatasetReference"
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "ForEach",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Get File Name",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get File Name').output.childItems",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Get LastModifiedDate",
+							"type": "GetMetadata",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.00:10:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "ds_DelimitedText_DynamicFileName",
+									"type": "DatasetReference",
+									"parameters": {
+										"File_Name": {
+											"value": "@item().name",
+											"type": "Expression"
+										}
+									}
+								},
+								"fieldList": [
+									"lastModified"
+								],
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							}
+						},
+						{
+							"name": "Watermark Value",
+							"type": "Lookup",
+							"dependsOn": [
+								{
+									"activity": "Get LastModifiedDate",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.00:10:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@concat(\n  'select top(1) last_watermark from [dbo].[file_watermark] where upper(file_name)=upper(''',\n  if(\n    contains(item().name, '.'),\n    substring(item().name, 0, lastIndexOf(item().name, '.')),\n    item().name\n  ),\n  ''') order by last_watermark desc'\n)",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "ds_AzureSqlTable_project1",
+									"type": "DatasetReference"
+								},
+								"firstRowOnly": true
+							}
+						},
+						{
+							"name": "If Condition",
+							"description": "This is used to process the file which having created date time is greater than watermark value. Other will not process.",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "Watermark Value",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@greater(\n    ticks(activity('Get LastModifiedDate').output.lastModified),\n    ticks(\n        if(\n            or(\n                equals(activity('Watermark Value').output.firstRow, null),\n                equals(activity('Watermark Value').output.firstRow.last_watermark, null)\n            ),\n            '1900-01-01T00:00:00Z',\n            activity('Watermark Value').output.firstRow.last_watermark\n        )\n    )\n)",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "Copy Source to Target",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.00:10:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "DelimitedTextSource",
+												"storeSettings": {
+													"type": "AzureBlobFSReadSettings",
+													"recursive": true,
+													"enablePartitionDiscovery": false
+												},
+												"formatSettings": {
+													"type": "DelimitedTextReadSettings"
+												}
+											},
+											"sink": {
+												"type": "ParquetSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings",
+													"copyBehavior": "FlattenHierarchy"
+												},
+												"formatSettings": {
+													"type": "ParquetWriteSettings"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "ds_DelimitedText_DynamicFileName",
+												"type": "DatasetReference",
+												"parameters": {
+													"File_Name": "@item().name"
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "ds_Parquet_target_bronze",
+												"type": "DatasetReference",
+												"parameters": {
+													"TargetFolderName": {
+														"value": "@concat(\n  'bronze/',\n  if(\n    contains(item().name, '.'),\n    substring(item().name, 0, lastIndexOf(item().name, '.')),\n    item().name\n  )\n)",
+														"type": "Expression"
+													},
+													"TargetFileName": {
+														"value": "@concat(\n  if(\n    contains(item().name, '.'),\n    substring(item().name, 0, lastIndexOf(item().name, '.')),\n    item().name\n  ),\n  '.parquet'\n)",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "Update Watermark",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "Copy Source to Target",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.00:10:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[dbo].[usp_update_watermark]",
+											"storedProcedureParameters": {
+												"file_name": {
+													"value": {
+														"value": "@{if(and(contains(item().name,'.'), greater(lastIndexOf(item().name,'.'), 0)), substring(item().name, 0, lastIndexOf(item().name,'.')), item().name)}",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"last_watermark": {
+													"value": {
+														"value": "@{activity('Get LastModifiedDate').output.lastModified}",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "ls_AzureSqlDatabase_watermark",
+											"type": "LinkedServiceReference"
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2026-02-25T12:58:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

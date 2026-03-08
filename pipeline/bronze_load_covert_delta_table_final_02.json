@@ -1,0 +1,31 @@
+{
+	"name": "bronze_load_covert_delta_table_final_02",
+	"properties": {
+		"description": "In this pipeline we are converting parquet file into delta table from one container to another container",
+		"activities": [
+			{
+				"name": "Bronze Load",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Users/sunilithape777@gmail.com/project_1/raw_to_bronze_project1"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_AzureDatabricks_bonze_load",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2026-02-25T12:58:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

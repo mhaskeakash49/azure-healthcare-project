@@ -1,0 +1,36 @@
+{
+	"name": "ds_Parquet_target_bronze",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_container_raw",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"TargetFolderName": {
+				"type": "string"
+			},
+			"TargetFileName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().TargetFileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().TargetFolderName",
+					"type": "Expression"
+				},
+				"fileSystem": "container"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

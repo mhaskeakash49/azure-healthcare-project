@@ -1,0 +1,25 @@
+{
+	"name": "ls_AzureSqlDatabase_watermark",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "azureprojects1.database.windows.net",
+			"database": "project1",
+			"encrypt": "mandatory",
+			"trustServerCertificate": false,
+			"authenticationType": "SQL",
+			"userName": "user",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_AzureKeyVault_project1_db",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "project2-db-pwd",
+				"secretVersion": "b01256a09e474ed098197bac48c84d26"
+			}
+		}
+	}
+}

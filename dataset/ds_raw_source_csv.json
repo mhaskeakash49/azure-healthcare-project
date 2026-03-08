@@ -1,0 +1,70 @@
+{
+	"name": "ds_raw_source_csv",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_container_raw",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"FileNames": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().FileNames",
+					"type": "Expression"
+				},
+				"folderPath": "RawData",
+				"fileSystem": "container"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "department_id",
+				"type": "String"
+			},
+			{
+				"name": "department_name",
+				"type": "String"
+			},
+			{
+				"name": "department_head",
+				"type": "String"
+			},
+			{
+				"name": "floor_number",
+				"type": "String"
+			},
+			{
+				"name": "building",
+				"type": "String"
+			},
+			{
+				"name": "contact_number",
+				"type": "String"
+			},
+			{
+				"name": "opening_time",
+				"type": "String"
+			},
+			{
+				"name": "closing_time",
+				"type": "String"
+			},
+			{
+				"name": "active_flag",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

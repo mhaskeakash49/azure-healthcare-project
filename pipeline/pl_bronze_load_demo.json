@@ -1,0 +1,129 @@
+{
+	"name": "pl_bronze_load_demo",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set variable",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "filelist",
+					"value": {
+						"value": "@'[{\"file\":\"Departments.csv\",\"folder\":\"departments\"},\n   {\"file\":\"Doctors.csv\",\"folder\":\"doctors\"},\n   {\"file\":\"admissions.csv\",\"folder\":\"visit\"},\n   {\"file\":\"d_icd_diagnoses.csv\",\"folder\":\"diagnosis\"},\n   {\"file\":\"diagnoses_icd.csv\",\"folder\":\"diagnosis\"},\n   {\"file\":\"insurance.csv\",\"folder\":\"billing\"},\n   {\"file\":\"patients.csv\",\"folder\":\"patient\"}]'",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEach",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Set variable",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@json(variables('filelist'))",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Copy data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.00:10:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": false,
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings",
+										"copyBehavior": "FlattenHierarchy"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_raw_source_csv",
+									"type": "DatasetReference",
+									"parameters": {
+										"FileNames": {
+											"value": "@item().file",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_raw_to_bronze",
+									"type": "DatasetReference",
+									"parameters": {
+										"Directory": {
+											"value": "@item().folder",
+											"type": "Expression"
+										},
+										"FileName": {
+											"value": "@item().file",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"filelist": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-02-20T11:52:53Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
