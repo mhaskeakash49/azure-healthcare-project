@@ -1,0 +1,241 @@
+from pyspark.sql.functions import col, lit, current_timestamp
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, FloatType, TimestampType
+
+source_loc='/Volumes/main/ecommerce/lakehouse_vol/bronze/'
+trg_loc='/Volumes/main/ecommerce/lakehouse_vol/silver'
+schema_loc='/Volumes/main/ecommerce/lakehouse_vol/SharedServices/'
+
+ListofDataset=[('customers', 'CustSchema.txt', 'customer_unique_id'),
+               ('order_items', 'OrderItemSchema.txt', 'seller_id'),
+               ('order_payments', 'OrderPaymentSchema.txt', 'order_id'),
+               ('orders', 'OrdersSchema.txt', 'customer_id'),
+               ('products', 'ProductSchema.txt', 'product_id')
+               ]
+
+for folder,Schema, dummycol in ListofDataset:
+   with open(f"{schema_loc}/{Schema}", 'r') as f:
+      schema_code = f.read()
+   exec(schema_code)
+   #print(schema_code)
+
+   df=spark.read.parquet(f"{source_loc}/{folder}",schema=schema_code)
+
+   df_unique=df.dropDuplicates([dummycol])
+   df_source= df_unique.filter(col(dummycol).isNotNull())
+        # source df=df_drop_null
+   #display(df_drop_null)
+   
+   df_target_scd=df_source\
+        .withColumn("is_active", lit(True))\
+        .withColumn("eff_start_dt", current_timestamp().cast("timestamp"))\
+        .withColumn("eff_end_dt", lit("9999-12-31").cast("timestamp"))
+
+   table_name=f"main.ecommerce.{folder}"
+   
+   if not spark.catalog.tableExists(table_name):
+       df_target_scd.write \
+        .format("delta")\
+        .mode("overwrite")\
+        .saveAsTable(table_name)
+       print(f"The new table is {table_name} created..!")
+   else:
+       #df_source.display()
+
+       df_target=spark.read.table(table_name)
+       #df_target.display()
+       current_target_df=df_target.filter(col('is_active')==True)
+       #current_target_df.display()
+
+       df_join=df_source.alias("src").join(current_target_df.alias("trg"), on=f"{dummycol}", how='left')
+       #df_join.display()
+
+
+       # New records received in target #
+       new_df=df_join.filter(col(f"trg.{dummycol}").isNull())\
+           .select(col('src.*'))\
+            .withColumn('is_active', lit(True))\
+            .withColumn('eff_start_dt', current_timestamp().cast("timestamp"))\
+            .withColumn('eff_end_dt', lit("9999-12-31").cast("timestamp"))
+       #new_df.display()
+
+       # Define the columns you want to check for changes (excluding the business key and SCD columns)
+       compare_cols = [c for c in df_source.columns if c not in [dummycol, "is_active", "eff_start_dt","eff_end_dt"]]
+        # Condition: any column value differs between source and target
+       change_condition = None
+       for c in compare_cols:
+           cond = (col(f"src.{c}") != col(f"trg.{c}"))
+           change_condition = cond if change_condition is None else (change_condition | cond)
+
+        # Changed records
+       changed_df = df_join.filter(col(f"trg.{dummycol}").isNotNull() & change_condition)
+       
+       #changed_df.display()
+
+       # Here we are expiring versions
+
+       expire_version_df=(changed_df.select(col("trg.*"))\
+           .withColumn("is_active", lit(False))\
+           .withColumn("eff_end_dt", current_timestamp().cast("timestamp"))                 
+       )
+
+       #expire_version_df.display()
+
+       # Now creating new version for which we received modified data from source only.
+
+       new_version_df=(changed_df.select(col("src.*"))\
+           .withColumn("is_active", lit(True))\
+           .withColumn("eff_start_dt", current_timestamp().cast("timestamp"))\
+            .withColumn("eff_end_dt", lit("9999-12-31").cast("timestamp"))                 
+       )
+
+       #new_version_df.display()
+
+       unchanged_df=current_target_df.join(changed_df, on=[f"{dummycol}"], how='leftanti')
+       #unchanged_df.display()
+
+       # new_version_df
+       # expire_version_df
+       # new_df
+       # unchanged_df
+
+       final_df=unchanged_df\
+           .union(new_df)\
+           .union(expire_version_df)\
+           .union(new_version_df)
+
+       final_df.display()
+
+       final_df.write \
+           .format("delta") \
+            .mode("overwrite") \
+            .option("overwriteSchema", "true") \
+            .saveAsTable(table_name)
+
+             
+
+
+=======================================================================================================
+=
+=======================================================================================================
+
+from pyspark.sql.functions import col, lit, current_timestamp
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, FloatType, TimestampType
+
+source_loc='/Volumes/main/ecommerce/lakehouse_vol/bronze/'
+trg_loc='/Volumes/main/ecommerce/lakehouse_vol/silver'
+schema_loc='/Volumes/main/ecommerce/lakehouse_vol/SharedServices/'
+
+ListofDataset=[('customers', 'CustSchema.txt', 'customer_unique_id'),
+               ('order_items', 'OrderItemSchema.txt', 'seller_id'),
+               ('order_payments', 'OrderPaymentSchema.txt', 'order_id'),
+               ('orders', 'OrdersSchema.txt', 'customer_id'),
+               ('products', 'ProductSchema.txt', 'product_id')
+               ]
+
+for folder,Schema, dummycol in ListofDataset:
+   with open(f"{schema_loc}/{Schema}", 'r') as f:
+      schema_code = f.read()
+   exec(schema_code)
+   #print(schema_code)
+
+   df=spark.read.parquet(f"{source_loc}/{folder}",schema=schema_code)
+
+   df_unique=df.dropDuplicates([dummycol])
+   df_source= df_unique.filter(col(dummycol).isNotNull())
+        # source df=df_drop_null
+   #display(df_drop_null)
+   
+   df_target_scd=df_source\
+        .withColumn("is_active", lit(True))\
+        .withColumn("eff_start_dt", current_timestamp().cast("timestamp"))\
+        .withColumn("eff_end_dt", lit("9999-12-31").cast("timestamp"))
+
+   table_name=f"main.ecommerce.{folder}"
+   
+   if not spark.catalog.tableExists(table_name):
+       df_target_scd.write \
+        .format("delta")\
+        .mode("overwrite")\
+        .saveAsTable(table_name)
+       print(f"The new table is {table_name} created..!")
+   else:
+       #df_source.display()
+
+       df_target=spark.read.table(table_name)
+       #df_target.display()
+       current_target_df=df_target.filter(col('is_active')==True)
+       #current_target_df.display()
+
+       df_join=df_source.alias("src").join(current_target_df.alias("trg"), on=f"{dummycol}", how='left')
+       #df_join.display()
+
+
+       # New records received in target #
+       new_df=df_join.filter(col(f"trg.{dummycol}").isNull())\
+           .select(col('src.*'))\
+            .withColumn('is_active', lit(True))\
+            .withColumn('eff_start_dt', current_timestamp().cast("timestamp"))\
+            .withColumn('eff_end_dt', lit("9999-12-31").cast("timestamp"))
+       #new_df.display()
+
+       # Define the columns you want to check for changes (excluding the business key and SCD columns)
+       compare_cols = [c for c in df_source.columns if c not in [dummycol, "is_active", "eff_start_dt","eff_end_dt"]]
+        # Condition: any column value differs between source and target
+       change_condition = None
+       for c in compare_cols:
+           cond = (col(f"src.{c}") != col(f"trg.{c}"))
+           change_condition = cond if change_condition is None else (change_condition | cond)
+
+        # Changed records
+       changed_df = df_join.filter(col(f"trg.{dummycol}").isNotNull() & change_condition)
+       
+       #changed_df.display()
+
+       # Here we are expiring versions
+
+       expire_version_df=(changed_df.select(col("trg.*"))\
+           .withColumn("is_active", lit(False))\
+           .withColumn("eff_end_dt", current_timestamp().cast("timestamp"))                 
+       )
+
+       #expire_version_df.display()
+
+       # Now creating new version for which we received modified data from source only.
+
+       new_version_df=(changed_df.select(col("src.*"))\
+           .withColumn("is_active", lit(True))\
+           .withColumn("eff_start_dt", current_timestamp().cast("timestamp"))\
+            .withColumn("eff_end_dt", lit("9999-12-31").cast("timestamp"))                 
+       )
+
+       #new_version_df.display()
+
+       unchanged_df=current_target_df.join(changed_df, on=[f"{dummycol}"], how='leftanti')
+       #unchanged_df.display()
+
+       # Already existing records in target which are not changed in source
+
+       expired_existing_target_df=df_target.filter(col('is_active')=='False')
+       #expired_existing_target_df.display()
+
+       # new_version_df
+       # expire_version_df
+       # new_df
+       # unchanged_df
+       #expired_existing_target_df
+
+       final_df=unchanged_df\
+           .union(new_df)\
+           .union(expire_version_df)\
+           .union(new_version_df)\
+           .union(expired_existing_target_df)
+
+       #final_df.display()
+
+       final_df.write \
+           .format("delta") \
+            .mode("overwrite") \
+            .option("overwriteSchema", "true") \
+            .saveAsTable(table_name)
+
+                
