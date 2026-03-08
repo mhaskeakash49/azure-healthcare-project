@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "df-azure-project-1"
+		},
+		"AzureDataLakeStorage1_accountKey": {
+			"value": ""
+		},
+		"ls_AzureDatabricks_bonze_load_accessToken": {
+			"value": ""
+		},
+		"ls_adls_container_raw_accountKey": {
+			"value": ""
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"value": "https://saazureproject1.dfs.core.windows.net/"
+		},
+		"ls_AzureDatabricks_bonze_load_properties_typeProperties_existingClusterId": {
+			"value": "0221-134839-ks0sbezf"
+		},
+		"ls_AzureKeyVault_project1_db_properties_typeProperties_baseUrl": {
+			"value": "https://akv-project1.vault.azure.net/"
+		},
+		"ls_AzureSqlDatabase_watermark_properties_typeProperties_server": {
+			"value": "azureprojects1.database.windows.net"
+		},
+		"ls_AzureSqlDatabase_watermark_properties_typeProperties_database": {
+			"value": "project1"
+		},
+		"ls_AzureSqlDatabase_watermark_properties_typeProperties_userName": {
+			"value": "user"
+		},
+		"ls_adls_container_raw_properties_typeProperties_url": {
+			"value": "https://saazureproject1.dfs.core.windows.net/"
+		}
+	}
+}

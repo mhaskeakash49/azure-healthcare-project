@@ -1,0 +1,112 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "df-azure-project-1"
+		},
+		"AzureDataLakeStorage1_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'AzureDataLakeStorage1'"
+		},
+		"ls_AzureDatabricks_bonze_load_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'ls_AzureDatabricks_bonze_load'"
+		},
+		"ls_adls_container_raw_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'ls_adls_container_raw'"
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://saazureproject1.dfs.core.windows.net/"
+		},
+		"ls_AzureDatabricks_bonze_load_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0221-134839-ks0sbezf"
+		},
+		"ls_AzureKeyVault_project1_db_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://akv-project1.vault.azure.net/"
+		},
+		"ls_AzureSqlDatabase_watermark_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "azureprojects1.database.windows.net"
+		},
+		"ls_AzureSqlDatabase_watermark_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "project1"
+		},
+		"ls_AzureSqlDatabase_watermark_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "user"
+		},
+		"ls_adls_container_raw_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://saazureproject1.dfs.core.windows.net/"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "df-azure-project-1_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"AzureDataLakeStorage1_accountKey": {
+						"value": "[parameters('AzureDataLakeStorage1_accountKey')]"
+					},
+					"ls_AzureDatabricks_bonze_load_accessToken": {
+						"value": "[parameters('ls_AzureDatabricks_bonze_load_accessToken')]"
+					},
+					"ls_adls_container_raw_accountKey": {
+						"value": "[parameters('ls_adls_container_raw_accountKey')]"
+					},
+					"AzureDataLakeStorage1_properties_typeProperties_url": {
+						"value": "[parameters('AzureDataLakeStorage1_properties_typeProperties_url')]"
+					},
+					"ls_AzureDatabricks_bonze_load_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('ls_AzureDatabricks_bonze_load_properties_typeProperties_existingClusterId')]"
+					},
+					"ls_AzureKeyVault_project1_db_properties_typeProperties_baseUrl": {
+						"value": "[parameters('ls_AzureKeyVault_project1_db_properties_typeProperties_baseUrl')]"
+					},
+					"ls_adls_container_raw_properties_typeProperties_url": {
+						"value": "[parameters('ls_adls_container_raw_properties_typeProperties_url')]"
+					},
+					"ls_AzureSqlDatabase_watermark_properties_typeProperties_server": {
+						"value": "[parameters('ls_AzureSqlDatabase_watermark_properties_typeProperties_server')]"
+					},
+					"ls_AzureSqlDatabase_watermark_properties_typeProperties_database": {
+						"value": "[parameters('ls_AzureSqlDatabase_watermark_properties_typeProperties_database')]"
+					},
+					"ls_AzureSqlDatabase_watermark_properties_typeProperties_userName": {
+						"value": "[parameters('ls_AzureSqlDatabase_watermark_properties_typeProperties_userName')]"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
