@@ -1,0 +1,29 @@
+{
+	"name": "pl_setup_cofig_pipeline",
+	"properties": {
+		"description": "This pipeline should be run only once time we are creating project first time any one of the environment",
+		"activities": [
+			{
+				"name": "Meatadata Configuration",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.10:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Users/sunilithape777@gmail.com/project_1/00_Metadata_setup"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_AzureDatabricks_bonze_load",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"annotations": []
+	}
+}
