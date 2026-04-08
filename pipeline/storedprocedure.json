@@ -1,0 +1,52 @@
+{
+	"name": "storedprocedure",
+	"properties": {
+		"activities": [
+			{
+				"name": "Stored procedure1",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[GetEmployeesByDeptAndSalary_1]",
+					"storedProcedureParameters": {
+						"Department": {
+							"value": {
+								"value": "@pipeline().parameters.Department",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"MinSalary": {
+							"value": {
+								"value": "@pipeline().parameters.MinSalary",
+								"type": "Expression"
+							},
+							"type": "Decimal"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase2",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"Department": {
+				"type": "string"
+			},
+			"MinSalary": {
+				"type": "int"
+			}
+		},
+		"annotations": []
+	}
+}
