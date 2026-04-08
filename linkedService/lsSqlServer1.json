@@ -1,6 +1,5 @@
 {
 	"name": "lsSqlServer1",
-	"type": "Microsoft.DataFactory/factories/linkedservices",
 	"properties": {
 		"parameters": {
 			"dbname": {
@@ -25,5 +24,6 @@
 				"secretName": "Sqldatabse"
 			}
 		}
-	}
+	},
+	"type": "Microsoft.DataFactory/factories/linkedservices"
 }
